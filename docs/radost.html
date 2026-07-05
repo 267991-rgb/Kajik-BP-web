@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Radost</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="script.js"></script>
+  </head>
+  <body class="page-emotion" data-page="radost">
+    <header class="top-bar">
+      <div class="top-bar-actions">
+        <a class="icon-btn" href="index.html" aria-label="Domů">
+          <img src="home-icon.svg" alt="Domů" />
+        </a>
+        <a class="pill-btn" href="emoce.html">Zpět k emocím</a>
+      </div>
+      <button class="pill-btn" id="next-sentence" type="button">Další věta</button>
+    </header>
+
+    <main class="content-shell">
+      <section class="panel panel-radost">
+        <div class="panel-title">RADOST</div>
+        <div id="graph" class="graph-placeholder" aria-label="graf-radost">graf-radost</div>
+        <p id="sentence" class="sentence"></p>
+        <div class="audio-box">
+          <p class="audio-label">Audio</p>
+          <p id="audio-label" class="audio-name"></p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
