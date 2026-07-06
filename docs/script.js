@@ -20,24 +20,20 @@ const content = {
       { text: "Potřebuju vydechnout.", audio: "audio-hnev-3" }
     ]
   },
-  duraz: {
-    table: [
-      { text: "Mám se dobře.", audio: "audio-duraz-1" },
-      { text: "Jsem silný a klidný.", audio: "audio-duraz-2" },
-      { text: "Dnes to zvládnu.", audio: "audio-duraz-3" }
-    ]
-  },
-  rytmus: {
-    table: [
-      { text: "Dýchám pomalu a jistě.", audio: "audio-rytmus-1" },
-      { text: "Každý nádech je klidný.", audio: "audio-rytmus-2" },
-      { text: "Tady jsem a jsem v pohodě.", audio: "audio-rytmus-3" }
-    ]
-  }
+  duraz: {},
+  rytmus: {}
 };
 
 function getRandomItem(list) {
   return list[Math.floor(Math.random() * list.length)];
+}
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
 }
 
 async function loadTableFromXLSX(page) {
@@ -53,7 +49,13 @@ async function loadTableFromXLSX(page) {
     const items = rows
       .map((r, i) => ({ text: String(r[0] || '').trim(), audio: r[1] ? String(r[1]).trim() : `audio-${page}-${i + 1}` }))
       .filter((it) => it.text.length > 0);
-    if (items.length) content[page] = content[page] || {} , content[page].table = items;
+      if (items.length) {
+        content[page] = content[page] || {};
+        content[page].table = items;
+        // prepare non-repeating shuffled queue
+        content[page].queue = shuffle(items.slice());
+        content[page].idx = 0;
+      }
     return items;
   } catch (e) {
     return null;
@@ -78,25 +80,42 @@ async function loadCombinedTables(pages) {
   return all;
 }
 
+function getRhythmMark(word) {
+  const cleaned = word.toLowerCase().replace(/[^a-záéíóúůýčřžšťď]/g, '');
+  if (!cleaned) return '·';
+  const syllables = (cleaned.match(/[aeiouyáéíóúůý]+/g) || []).length;
+  return syllables > 1 ? '–' : '·';
+}
+
 function renderSentence(page, sentenceEl, audioEl) {
   const pageData = content[page];
   if (!pageData || !pageData.table || !pageData.table.length) return;
 
-  const item = getRandomItem(pageData.table || []);
+  let item = null;
+  // use non-repeating queue if present
+  if (pageData.queue && Array.isArray(pageData.queue) && pageData.queue.length) {
+    if (pageData.idx === undefined) pageData.idx = 0;
+    item = pageData.queue[pageData.idx];
+    pageData.idx += 1;
+    if (pageData.idx >= pageData.queue.length) {
+      // reshuffle for next cycle
+      pageData.queue = shuffle(pageData.table.slice());
+      pageData.idx = 0;
+    }
+  } else {
+    item = getRandomItem(pageData.table || []);
+  }
   if (page === 'duraz') {
     const words = item.text.split(' ');
     const emphasizedIndex = Math.floor(words.length / 2);
     words[emphasizedIndex] = `<span class="emphasis-word">${words[emphasizedIndex]}</span>`;
     sentenceEl.innerHTML = words.join(' ');
   } else if (page === 'rytmus') {
-    sentenceEl.textContent = item.text;
-    sentenceEl.innerHTML = item.text
-      .split('')
-      .map((char) => {
-        if (char === ' ') return '&nbsp;';
-        if (char === '.') return '·';
-        if (char === ',') return '•';
-        return char;
+    const words = item.text.split(/\s+/).filter(Boolean);
+    sentenceEl.innerHTML = words
+      .map((word) => {
+        const mark = getRhythmMark(word);
+        return `<span class="rhythm-word"><span class="word-text">${word}</span><span class="rhythm-mark">${mark}</span></span>`;
       })
       .join('');
   } else {
@@ -122,7 +141,18 @@ async function initPage(page) {
   // If duraz or rytmus we combine radost/smutek/hnev
   if (page === 'duraz' || page === 'rytmus') {
     const combined = await loadCombinedTables(['radost', 'smutek', 'hnev']);
-    if (combined.length) content[page] = content[page] || {}, content[page].table = combined;
+    if (combined.length) {
+      content[page] = content[page] || {};
+      content[page].table = combined;
+      content[page].queue = shuffle(combined.slice());
+      content[page].idx = 0;
+    } else {
+      // if no excel table could be loaded, keep the page empty until the file exists
+      content[page] = content[page] || {};
+      content[page].table = [];
+      content[page].queue = [];
+      content[page].idx = 0;
+    }
   }
 
   // load graph image for emotion pages
