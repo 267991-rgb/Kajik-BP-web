@@ -40,11 +40,49 @@ function getRandomItem(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
+async function loadTableFromXLSX(page) {
+  const path = `tabulka-${page}.xlsx`;
+  try {
+    const res = await fetch(path);
+    if (!res.ok) throw new Error('not found');
+    const ab = await res.arrayBuffer();
+    const workbook = XLSX.read(ab, { type: 'array' });
+    const firstSheet = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheet];
+    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    const items = rows
+      .map((r, i) => ({ text: String(r[0] || '').trim(), audio: r[1] ? String(r[1]).trim() : `audio-${page}-${i + 1}` }))
+      .filter((it) => it.text.length > 0);
+    if (items.length) content[page] = content[page] || {} , content[page].table = items;
+    return items;
+  } catch (e) {
+    return null;
+  }
+}
+
+function loadGraphImage(page) {
+  const img = document.getElementById('graph-img');
+  if (!img) return;
+  const src = `graf-${page}.jpg`;
+  img.src = src;
+  img.onerror = () => { img.style.display = 'none'; };
+  img.onload = () => { img.style.display = 'block'; };
+}
+
+async function loadCombinedTables(pages) {
+  const all = [];
+  for (const p of pages) {
+    const items = await loadTableFromXLSX(p);
+    if (items && items.length) all.push(...items);
+  }
+  return all;
+}
+
 function renderSentence(page, sentenceEl, audioEl) {
   const pageData = content[page];
-  if (!pageData) return;
+  if (!pageData || !pageData.table || !pageData.table.length) return;
 
-  const item = getRandomItem(pageData.table);
+  const item = getRandomItem(pageData.table || []);
   if (page === 'duraz') {
     const words = item.text.split(' ');
     const emphasizedIndex = Math.floor(words.length / 2);
@@ -75,10 +113,30 @@ const sentenceEl = document.getElementById('sentence');
 const audioEl = document.getElementById('audio-label');
 const nextBtn = document.getElementById('next-sentence');
 
-if (page && sentenceEl) {
+async function initPage(page) {
+  if (!page) return;
+
+  // try loading the page's own table
+  await loadTableFromXLSX(page);
+
+  // If duraz or rytmus we combine radost/smutek/hnev
+  if (page === 'duraz' || page === 'rytmus') {
+    const combined = await loadCombinedTables(['radost', 'smutek', 'hnev']);
+    if (combined.length) content[page] = content[page] || {}, content[page].table = combined;
+  }
+
+  // load graph image for emotion pages
+  if (['radost','smutek','hnev'].includes(page)) loadGraphImage(page);
+
+  // render first sentence (falls back to built-in content if no table loaded)
   renderSentence(page, sentenceEl, audioEl);
 
   if (nextBtn) {
     nextBtn.addEventListener('click', () => renderSentence(page, sentenceEl, audioEl));
   }
+}
+
+if (page && sentenceEl) {
+  // initialize asynchronously
+  initPage(page);
 }

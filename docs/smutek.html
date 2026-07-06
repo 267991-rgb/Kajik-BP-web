@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="cs">
-  <head>
+    <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smutek</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script defer src="script.js"></script>
   </head>
   <body class="page-emotion" data-page="smutek">
@@ -21,7 +22,7 @@
     <main class="content-shell">
       <section class="panel panel-smutek">
         <div class="panel-title">SMUTEK</div>
-        <div id="graph" class="graph-placeholder" aria-label="graf-smutek">graf-smutek</div>
+        <img id="graph-img" class="graph-img" alt="graf-smutek" src="graf-smutek.jpg" onerror="this.style.display='none'" />
         <p id="sentence" class="sentence"></p>
         <div class="audio-box">
           <p class="audio-label">Audio</p>
