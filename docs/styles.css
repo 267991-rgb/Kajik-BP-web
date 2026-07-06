@@ -216,6 +216,62 @@ body.page-home {
   margin: 0 0 20px;
 }
 
+.rhythm-text-block {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 22px;
+  margin-bottom: 22px;
+  position: relative;
+}
+
+.rhythm-word {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 8px 16px;
+  min-width: 72px;
+  padding: 12px 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 18px;
+  box-shadow: inset 0 0 0 1px rgba(74, 52, 40, 0.08);
+}
+
+.rhythm-word span {
+  display: block;
+}
+
+.rhythm-word .word-text {
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.rhythm-mark {
+  margin-top: 10px;
+  font-size: 1.3rem;
+  color: #4a3428;
+}
+
+.next-bubble {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #d8c5f3 0%, #b39df1 100%);
+  color: #3c2730;
+  font-size: 1rem;
+  font-weight: 800;
+  border-radius: 999px;
+  box-shadow: 0 18px 32px rgba(94, 63, 37, 0.25);
+}
+
+.rhythm-panel {
+  position: relative;
+  padding-bottom: 110px;
+}
+
 .emphasis-sentence {
   font-size: clamp(1.4rem, 2.6vw, 2.2rem);
   font-weight: 800;

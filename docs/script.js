@@ -20,8 +20,20 @@ const content = {
       { text: "Potřebuju vydechnout.", audio: "audio-hnev-3" }
     ]
   },
-  duraz: {},
-  rytmus: {}
+  duraz: {
+    table: [
+      { text: "Mám se dobře.", audio: "audio-duraz-1" },
+      { text: "Jsem silný a klidný.", audio: "audio-duraz-2" },
+      { text: "Dnes to zvládnu.", audio: "audio-duraz-3" }
+    ]
+  },
+  rytmus: {
+    table: [
+      { text: "Dýchám pomalu a jistě.", audio: "audio-rytmus-1" },
+      { text: "Každý nádech je klidný.", audio: "audio-rytmus-2" },
+      { text: "Tady jsem a jsem v pohodě.", audio: "audio-rytmus-3" }
+    ]
+  }
 };
 
 function getRandomItem(list) {
@@ -145,12 +157,6 @@ async function initPage(page) {
       content[page] = content[page] || {};
       content[page].table = combined;
       content[page].queue = shuffle(combined.slice());
-      content[page].idx = 0;
-    } else {
-      // if no excel table could be loaded, keep the page empty until the file exists
-      content[page] = content[page] || {};
-      content[page].table = [];
-      content[page].queue = [];
       content[page].idx = 0;
     }
   }
