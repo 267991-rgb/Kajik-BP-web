@@ -184,10 +184,6 @@ function renderSentence(page, sentenceEl, audioEl) {
     playBtn.title = audioSrc ? 'Přehrát audio' : 'Žádný soubor';
     playBtn.onclick = () => playSentenceAudio(audioSrc);
   }
-
-  if (audioSrc) {
-    playSentenceAudio(audioSrc);
-  }
 }
 
 const page = document.body.dataset.page;
