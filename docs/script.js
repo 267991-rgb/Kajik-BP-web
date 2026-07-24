@@ -75,9 +75,16 @@ function getSentenceAudioElement() {
   return sentenceAudio;
 }
 
+function stopSentenceAudio() {
+  const audio = getSentenceAudioElement();
+  audio.pause();
+  audio.currentTime = 0;
+}
+
 function playSentenceAudio(src) {
   if (!src) return;
   const audio = getSentenceAudioElement();
+  stopSentenceAudio();
   audio.src = src;
   audio.load();
   audio.play().catch(() => {});
@@ -212,7 +219,10 @@ async function initPage(page) {
   renderSentence(page, sentenceEl, audioEl);
 
   if (nextBtn) {
-    nextBtn.addEventListener('click', () => renderSentence(page, sentenceEl, audioEl));
+    nextBtn.addEventListener('click', () => {
+      stopSentenceAudio();
+      renderSentence(page, sentenceEl, audioEl);
+    });
   }
 }
 
