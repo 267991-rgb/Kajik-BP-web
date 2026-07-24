@@ -179,6 +179,12 @@ function renderSentence(page, sentenceEl, audioEl) {
     sentenceEl.onclick = () => playSentenceAudio(audioSrc);
   }
 
+  if (playBtn) {
+    playBtn.disabled = !audioSrc;
+    playBtn.title = audioSrc ? 'Přehrát audio' : 'Žádný soubor';
+    playBtn.onclick = () => playSentenceAudio(audioSrc);
+  }
+
   if (audioSrc) {
     playSentenceAudio(audioSrc);
   }
@@ -188,6 +194,7 @@ const page = document.body.dataset.page;
 const sentenceEl = document.getElementById('sentence');
 const audioEl = document.getElementById('audio-label');
 const nextBtn = document.getElementById('next-sentence');
+const playBtn = document.getElementById('play-audio-btn');
 
 async function initPage(page) {
   if (!page) return;
