@@ -36,6 +36,92 @@ const content = {
   }
 };
 
+const rhythmBreakdownByText = {
+  "Usmívám se celý den": [
+    { segment: "Us", mark: "." },
+    { segment: "mí", mark: "-" },
+    { segment: "vám", mark: "-" },
+    { segment: "se", mark: "." },
+    { segment: "kaž", mark: "." },
+    { segment: "dý", mark: "-" },
+    { segment: "den", mark: "." }
+  ],
+  "Mám se dobře": [
+    { segment: "Mám", mark: "." },
+    { segment: "se", mark: "." },
+    { segment: "do", mark: "." },
+    { segment: "bě", mark: "-" }
+  ],
+  "Dnes je krásný den": [
+    { segment: "Dnes", mark: "." },
+    { segment: "je", mark: "." },
+    { segment: "krás", mark: "-" },
+    { segment: "ný", mark: "-" },
+    { segment: "den", mark: "." }
+  ],
+  "Mám radostný den": [
+    { segment: "Mám", mark: "." },
+    { segment: "ra", mark: "." },
+    { segment: "dos", mark: "." },
+    { segment: "tný", mark: "-" },
+    { segment: "den", mark: "." }
+  ],
+  "Venku svítí slunce": [
+    { segment: "Ven", mark: "." },
+    { segment: "ku", mark: "." },
+    { segment: "sví", mark: "-" },
+    { segment: "tí", mark: "-" },
+    { segment: "slun", mark: "." },
+    { segment: "ce", mark: "." }
+  ],
+  "Jsem šťastný": [
+    { segment: "Jsem", mark: "." },
+    { segment: "šťast", mark: "-" },
+    { segment: "ný", mark: "-" }
+  ],
+  "Život je krásný": [
+    { segment: "Ži", mark: "." },
+    { segment: "vot", mark: "." },
+    { segment: "je", mark: "." },
+    { segment: "krás", mark: "-" },
+    { segment: "ný", mark: "-" }
+  ],
+  "Srdce mi zpívá": [
+    { segment: "Srd", mark: "." },
+    { segment: "ce", mark: "." },
+    { segment: "mi", mark: "." },
+    { segment: "zpí", mark: "-" },
+    { segment: "vá", mark: "-" }
+  ]
+};
+
+function normalizeRhythmText(text) {
+  return String(text || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getRhythmBreakdownForText(text) {
+  const normalized = normalizeRhythmText(text);
+  return rhythmBreakdownByText[normalized] || buildDefaultRhythmBreakdown(text);
+}
+
+function buildDefaultRhythmBreakdown(text) {
+  const words = String(text || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  return words.map((word) => {
+    const cleanWord = word.replace(/[.,;:!?]/g, '').trim();
+    if (!cleanWord) return { segment: word, mark: '.' };
+    const hasLongVowel = /[áéíóúůý]/i.test(cleanWord);
+    return { segment: word, mark: hasLongVowel ? '-' : '.' };
+  });
+}
+
 function getRandomItem(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
@@ -91,28 +177,45 @@ function playSentenceAudio(src) {
 }
 
 async function loadTableFromXLSX(page) {
-  const path = `tabulka-${page}.xlsx`;
-  try {
-    const res = await fetch(path);
-    if (!res.ok) throw new Error('not found');
-    const ab = await res.arrayBuffer();
-    const workbook = XLSX.read(ab, { type: 'array' });
-    const firstSheet = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheet];
-    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-    const items = rows
-      .map((r, i) => ({ text: String(r[0] || '').trim(), audio: r[1] ? String(r[1]).trim() : `audio-${page}-${i + 1}` }))
-      .filter((it) => it.text.length > 0);
-    if (items.length) {
-      content[page] = content[page] || {};
-      content[page].table = items;
-      content[page].queue = shuffle(items.slice());
-      content[page].idx = 0;
-    }
-    return items;
-  } catch (e) {
-    return null;
+  const baseName = `tabulka-${page}.xlsx`;
+  const candidates = [baseName];
+  const pathname = window.location.pathname.replace(/\\/g, '/');
+
+  if (!pathname.includes('/docs/')) {
+    candidates.push(`docs/${baseName}`);
+  } else {
+    candidates.push(`./${baseName}`);
   }
+
+  for (const path of candidates) {
+    try {
+      const res = await fetch(path);
+      if (!res.ok) continue;
+      const ab = await res.arrayBuffer();
+      const workbook = XLSX.read(ab, { type: 'array' });
+      const firstSheet = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheet];
+      const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      const items = rows
+        .map((r, i) => ({
+          text: String(r[0] || '').trim(),
+          rhythm: page === 'rytmus' ? getRhythmBreakdownForText(String(r[0] || '').trim()) : [],
+          audio: r[1] ? String(r[1]).trim() : `audio-${page}-${i + 1}`
+        }))
+        .filter((it) => it.text.length > 0);
+      if (items.length) {
+        content[page] = content[page] || {};
+        content[page].table = items;
+        content[page].queue = shuffle(items.slice());
+        content[page].idx = 0;
+      }
+      return items;
+    } catch (e) {
+      // pokračujeme další možností
+    }
+  }
+
+  return null;
 }
 
 function loadGraphImage(page) {
@@ -163,13 +266,23 @@ function renderSentence(page, sentenceEl, audioEl) {
     words[emphasizedIndex] = `<span class="emphasis-word">${words[emphasizedIndex]}</span>`;
     sentenceEl.innerHTML = words.join(' ');
   } else if (page === 'rytmus') {
-    const words = item.text.split(/\s+/).filter(Boolean);
-    sentenceEl.innerHTML = words
-      .map((word) => {
-        const mark = getRhythmMark(word);
-        return `<span class="rhythm-word"><span class="word-text">${word}</span><span class="rhythm-mark">${mark}</span></span>`;
-      })
-      .join('');
+    const rhythmItems = Array.isArray(item.rhythm) && item.rhythm.length
+      ? item.rhythm
+      : getRhythmBreakdownForText(item.text);
+
+    if (rhythmItems.length) {
+      sentenceEl.innerHTML = rhythmItems
+        .map(({ segment, mark }) => {
+          const letters = String(segment || '')
+            .split('')
+            .map((letter) => `<span class="rhythm-letter"><span class="letter-char">${letter}</span><span class="rhythm-mark">${mark}</span></span>`)
+            .join('');
+          return `<span class="rhythm-word">${letters}</span>`;
+        })
+        .join(' ');
+    } else {
+      sentenceEl.textContent = item.text;
+    }
   } else {
     sentenceEl.textContent = item.text;
   }
