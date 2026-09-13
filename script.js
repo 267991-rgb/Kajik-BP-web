@@ -178,9 +178,7 @@ function buildAudioSrc(page, item) {
   if (!item || !item.text) return '';
   const fileName = normalizeSentenceToAudioFile(item.text);
   if (!fileName) return '';
-  const pagePrefix = page === 'duraz' || page === 'rytmus' ? `${page}_` : '';
-  const extension = pagePrefix ? 'mp3' : 'm4a';
-  return `./audio/${pagePrefix}${fileName}.${extension}`;
+  return `./audio/${page}_${fileName}.mp3`;
 }
 
 let sentenceAudio = null;
