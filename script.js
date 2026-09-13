@@ -193,14 +193,6 @@ function playSentenceAudio(src) {
   if (!src) return;
   const audio = getSentenceAudioElement();
   stopSentenceAudio();
-  audio.onerror = () => {
-    const fallbackSrc = src.replace(/\.m4a$/i, '.mp3');
-    if (audio.src !== new URL(fallbackSrc, window.location.href).href) {
-      audio.src = fallbackSrc;
-      audio.load();
-      audio.play().catch(() => {});
-    }
-  };
   audio.src = src;
   audio.load();
   audio.play().catch(() => {});
@@ -287,14 +279,7 @@ function getRichTextMarkup(cell) {
 
 async function loadTableFromXLSX(page) {
   const baseName = `tabulka-${page}.xlsx`;
-  const candidates = [baseName];
-  const pathname = window.location.pathname.replace(/\\/g, '/');
-
-  if (!pathname.includes('/docs/')) {
-    candidates.push(`docs/${baseName}`);
-  } else {
-    candidates.push(`./${baseName}`);
-  }
+  const candidates = [`./${baseName}`];
 
   for (const path of candidates) {
     try {
