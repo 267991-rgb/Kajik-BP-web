@@ -36,6 +36,9 @@ const content = {
   }
 };
 
+// Rytmický přepis pro věty na stránce Rytmus.
+// Každý záznam obsahuje pole segmentů, kde každý segment má vlastní značku.
+// Příklad zápisu: "Us/. mí/- vám/- se/."
 const rhythmBreakdownByText = {
   "Usmívám se celý den": [
     { segment: "Us", mark: "." },
@@ -139,20 +142,6 @@ function getRhythmBreakdownForText(text) {
   return rhythmBreakdownByText[normalized] || buildDefaultRhythmBreakdown(text);
 }
 
-function buildDefaultRhythmBreakdown(text) {
-  const words = String(text || '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  return words.map((word) => {
-    const cleanWord = word.replace(/[.,;:!?]/g, '').trim();
-    if (!cleanWord) return { segment: word, mark: '.' };
-    const hasLongVowel = /[áéíóúůý]/i.test(cleanWord);
-    return { segment: word, mark: hasLongVowel ? '-' : '.' };
-  });
-}
-
 function getRandomItem(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
@@ -219,31 +208,50 @@ function playSentenceAudio(src) {
 function parseRhythmBreakdown(rawValue) {
   if (rawValue === undefined || rawValue === null) return [];
 
-  const parts = String(rawValue)
+  const text = String(rawValue).trim();
+  if (!text) return [];
+
+  const parts = text
+    .split(/\r?\n/)
+    .flatMap((line) => line.split(/\s+/))
+    .filter(Boolean);
+
+  const result = [];
+  for (const part of parts) {
+    const match = part.match(/^(.*?)(?:\/|\|)(.*)$/);
+    if (match) {
+      const segment = match[1].trim();
+      const mark = match[2].trim();
+      if (segment) result.push({ segment, mark: mark || '.' });
+      continue;
+    }
+
+    const directMatch = part.match(/^(.*?)([.\-])$/);
+    if (directMatch) {
+      const segment = directMatch[1].trim();
+      const mark = directMatch[2] === '-' ? '-' : '.';
+      if (segment) result.push({ segment, mark });
+      continue;
+    }
+
+    result.push({ segment: part.trim(), mark: '.' });
+  }
+
+  return result;
+}
+
+function buildDefaultRhythmBreakdown(text) {
+  const words = String(text || '')
     .trim()
     .split(/\s+/)
     .filter(Boolean);
 
-  return parts.reduce((result, part) => {
-    const match = part.match(/^(.*?)(?:\/|\|)(.*)$/);
-    if (match) {
-      const segment = match[1].trim();
-      if (segment) result.push({ segment, mark: match[2].trim() || '.' });
-      return result;
-    }
-
-    const directMatch = part.match(/^(.*?)([.,-])$/);
-    if (directMatch) {
-      result.push({
-        segment: directMatch[1].trim(),
-        mark: directMatch[2] === '-' ? '-' : directMatch[2]
-      });
-      return result;
-    }
-
-    result.push({ segment: part, mark: '.' });
-    return result;
-  }, []);
+  return words.map((word) => {
+    const cleanWord = word.replace(/[.,;:!?]/g, '').trim();
+    if (!cleanWord) return { segment: word, mark: '.' };
+    const hasLongVowel = /[áéíóúůý]/i.test(cleanWord);
+    return { segment: word, mark: hasLongVowel ? '-' : '.' };
+  });
 }
 
 function escapeHtml(value) {
@@ -289,7 +297,8 @@ async function loadTableFromXLSX(page) {
 
   for (const path of candidates) {
     try {
-      const res = await fetch(path, { cache: 'no-store' });
+      const separator = path.includes('?') ? '&' : '?';
+      const res = await fetch(`${path}${separator}v=20260913`, { cache: 'no-store' });
       if (!res.ok) continue;
       const ab = await res.arrayBuffer();
       const workbook = XLSX.read(ab, { type: 'array', cellHTML: true });
@@ -316,6 +325,7 @@ async function loadTableFromXLSX(page) {
           };
           if (item.text.length > 0) items.push(item);
       }
+
       if (items.length) {
         content[page] = content[page] || {};
         content[page].table = items;
@@ -347,13 +357,6 @@ async function loadCombinedTables(pages) {
     if (items && items.length) all.push(...items);
   }
   return all;
-}
-
-function getRhythmMark(word) {
-  const cleaned = word.toLowerCase().replace(/[^a-záéíóúůýčřžšťď]/g, '');
-  if (!cleaned) return '·';
-  const syllables = (cleaned.match(/[aeiouyáéíóúůý]+/g) || []).length;
-  return syllables > 1 ? '–' : '·';
 }
 
 function getRhythmWordEndIndexes(text, rhythmItems) {
