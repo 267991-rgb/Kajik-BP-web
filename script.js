@@ -167,7 +167,8 @@ function buildAudioSrc(page, item) {
   if (!item || !item.text) return '';
   const fileName = normalizeSentenceToAudioFile(item.text);
   if (!fileName) return '';
-  return `./audio/${page}_${fileName}.mp3`;
+  const audioPrefix = ['radost', 'smutek', 'hnev'].includes(page) ? 'emoce' : page;
+  return `./audio/${audioPrefix}_${fileName}.mp3`;
 }
 
 let sentenceAudio = null;
