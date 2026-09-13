@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="cs">
+    <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Důraz</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script defer src="script.js?v=2"></script>
+  </head>
+  <body class="page-emphasis" data-page="duraz">
+    <header class="top-bar">
+      <div class="top-bar-actions">
+        <a class="icon-btn" href="index.html" aria-label="Domů">
+          <img src="home-icon.svg" alt="Domů" />
+        </a>
+      </div>
+      <button class="pill-btn" id="next-sentence" type="button">Další věta</button>
+    </header>
+
+    <main class="content-shell">
+      <section class="panel panel-duraz">
+        <div class="panel-title">DŮRAZ</div>
+        <div class="sentence-row">
+          <p id="sentence" class="sentence emphasis-sentence"></p>
+          <button id="play-audio-btn" class="play-audio-btn" type="button" aria-label="Přehrát audio">▶</button>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
