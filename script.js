@@ -368,6 +368,31 @@ function getRhythmWordEndIndexes(text, rhythmItems) {
   return wordEndIndexes;
 }
 
+function showLocalFileWarning() {
+  if (location.protocol !== 'file:') return;
+
+  const existing = document.getElementById('local-file-warning');
+  if (existing) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'local-file-warning';
+  banner.textContent = 'Audio nefunguje při otevření přes file://. Spusťte stránku přes localhost: http://localhost:8000/';
+  banner.style.position = 'fixed';
+  banner.style.top = '0';
+  banner.style.left = '0';
+  banner.style.right = '0';
+  banner.style.zIndex = '9999';
+  banner.style.background = '#7a1f1f';
+  banner.style.color = '#fff';
+  banner.style.padding = '12px 16px';
+  banner.style.fontSize = '14px';
+  banner.style.fontWeight = '600';
+  banner.style.textAlign = 'center';
+  banner.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+
+  document.body.prepend(banner);
+}
+
 function renderSentence(page, sentenceEl, audioEl) {
   const pageData = content[page];
   if (!pageData || !pageData.table || !pageData.table.length) return;
@@ -467,6 +492,8 @@ async function initPage(page) {
     });
   }
 }
+
+showLocalFileWarning();
 
 if (page && sentenceEl) {
   initPage(page);
