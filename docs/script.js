@@ -47,10 +47,10 @@ const rhythmBreakdownByText = {
     { segment: "den", mark: "." }
   ],
   "Mám se dobře": [
-    { segment: "Mám", mark: "." },
+    { segment: "Mám", mark: "-" },
     { segment: "se", mark: "." },
     { segment: "do", mark: "." },
-    { segment: "bě", mark: "-" }
+    { segment: "bře", mark: "." }
   ],
   "Dnes je krásný den": [
     { segment: "Dnes", mark: "." },
@@ -92,6 +92,36 @@ const rhythmBreakdownByText = {
     { segment: "mi", mark: "." },
     { segment: "zpí", mark: "-" },
     { segment: "vá", mark: "-" }
+  ],
+  "Dýchám pomalu a jistě": [
+    { segment: "Dý", mark: "-" },
+    { segment: "chám", mark: "-" },
+    { segment: "po", mark: "." },
+    { segment: "ma", mark: "." },
+    { segment: "lu", mark: "." },
+    { segment: "a", mark: "." },
+    { segment: "jis", mark: "-" },
+    { segment: "tě", mark: "." }
+  ],
+  "Každý nádech je klidný": [
+    { segment: "Kaž", mark: "-" },
+    { segment: "dý", mark: "-" },
+    { segment: "ná", mark: "-" },
+    { segment: "dech", mark: "-" },
+    { segment: "je", mark: "." },
+    { segment: "klid", mark: "-" },
+    { segment: "ný", mark: "-" }
+  ],
+  "Tady jsem a jsem v pohodě": [
+    { segment: "Ta", mark: "." },
+    { segment: "dy", mark: "." },
+    { segment: "jsem", mark: "-" },
+    { segment: "a", mark: "." },
+    { segment: "jsem", mark: "-" },
+    { segment: "v", mark: "." },
+    { segment: "po", mark: "." },
+    { segment: "ho", mark: "." },
+    { segment: "dě", mark: "-" }
   ]
 };
 
@@ -99,6 +129,7 @@ function normalizeRhythmText(text) {
   return String(text || '')
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[.!?]+$/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -143,10 +174,13 @@ function normalizeSentenceToAudioFile(text) {
     .replace(/^_+|_+$/g, '');
 }
 
-function buildAudioSrc(item) {
+function buildAudioSrc(page, item) {
   if (!item || !item.text) return '';
   const fileName = normalizeSentenceToAudioFile(item.text);
-  return fileName ? `./audio/${fileName}.m4a` : '';
+  if (!fileName) return '';
+  const pagePrefix = page === 'duraz' || page === 'rytmus' ? `${page}_` : '';
+  const extension = pagePrefix ? 'mp3' : 'm4a';
+  return `./audio/${pagePrefix}${fileName}.${extension}`;
 }
 
 let sentenceAudio = null;
@@ -171,9 +205,77 @@ function playSentenceAudio(src) {
   if (!src) return;
   const audio = getSentenceAudioElement();
   stopSentenceAudio();
+  audio.onerror = () => {
+    const fallbackSrc = src.replace(/\.m4a$/i, '.mp3');
+    if (audio.src !== new URL(fallbackSrc, window.location.href).href) {
+      audio.src = fallbackSrc;
+      audio.load();
+      audio.play().catch(() => {});
+    }
+  };
   audio.src = src;
   audio.load();
   audio.play().catch(() => {});
+}
+
+function parseRhythmBreakdown(rawValue) {
+  if (rawValue === undefined || rawValue === null) return [];
+
+  const parts = String(rawValue)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  return parts.reduce((result, part) => {
+    const match = part.match(/^(.*?)(?:\/|\|)(.*)$/);
+    if (match) {
+      const segment = match[1].trim();
+      if (segment) result.push({ segment, mark: match[2].trim() || '.' });
+      return result;
+    }
+
+    const directMatch = part.match(/^(.*?)([.,-])$/);
+    if (directMatch) {
+      result.push({
+        segment: directMatch[1].trim(),
+        mark: directMatch[2] === '-' ? '-' : directMatch[2]
+      });
+      return result;
+    }
+
+    result.push({ segment: part, mark: '.' });
+    return result;
+  }, []);
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+  }[character]));
+}
+
+function getRichTextMarkup(cell) {
+  const text = String(cell?.w ?? cell?.v ?? '').trim();
+  if (!cell?.h || typeof DOMParser === 'undefined') {
+    return { text, html: escapeHtml(text), hasBold: false };
+  }
+  const root = new DOMParser().parseFromString(`<div>${cell.h}</div>`, 'text/html')
+    .body.firstElementChild;
+  let hasBold = false;
+  const renderNode = (node, inheritedBold = false) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const value = node.nodeValue || '';
+      return inheritedBold ? `<strong class="emphasis-word">${escapeHtml(value)}</strong>` : escapeHtml(value);
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+    const style = node.getAttribute('style') || '';
+    const isBold = inheritedBold || /^(b|strong)$/i.test(node.tagName)
+      || /font-weight\s*:\s*(bold|[6-9]00)/i.test(style);
+    if (isBold) hasBold = true;
+    return Array.from(node.childNodes).map((child) => renderNode(child, isBold)).join('');
+  };
+  const html = Array.from(root?.childNodes || []).map((node) => renderNode(node)).join('');
+  return { text, html: html || escapeHtml(text), hasBold };
 }
 
 async function loadTableFromXLSX(page) {
@@ -189,20 +291,33 @@ async function loadTableFromXLSX(page) {
 
   for (const path of candidates) {
     try {
-      const res = await fetch(path);
+      const res = await fetch(path, { cache: 'no-store' });
       if (!res.ok) continue;
       const ab = await res.arrayBuffer();
-      const workbook = XLSX.read(ab, { type: 'array' });
+      const workbook = XLSX.read(ab, { type: 'array', cellHTML: true });
       const firstSheet = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheet];
-      const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-      const items = rows
-        .map((r, i) => ({
-          text: String(r[0] || '').trim(),
-          rhythm: page === 'rytmus' ? getRhythmBreakdownForText(String(r[0] || '').trim()) : [],
-          audio: r[1] ? String(r[1]).trim() : `audio-${page}-${i + 1}`
-        }))
-        .filter((it) => it.text.length > 0);
+      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+      const items = [];
+      for (let rowIndex = range.s.r; rowIndex <= range.e.r; rowIndex += 1) {
+          const textCell = worksheet[XLSX.utils.encode_cell({ r: rowIndex, c: 0 })];
+          const richText = getRichTextMarkup(textCell);
+          const rhythmCell = worksheet[XLSX.utils.encode_cell({ r: rowIndex, c: 1 })];
+          const audioCell = worksheet[XLSX.utils.encode_cell({ r: rowIndex, c: 2 })];
+          const text = richText.text;
+          const rhythmRaw = rhythmCell ? String(rhythmCell.w ?? rhythmCell.v ?? '').trim() : '';
+          const parsedRhythm = parseRhythmBreakdown(rhythmRaw);
+          const item = {
+            text,
+            emphasisHtml: richText.html,
+            hasBold: richText.hasBold,
+            rhythm: parsedRhythm.length || page !== 'rytmus'
+              ? parsedRhythm
+              : getRhythmBreakdownForText(text),
+            audio: audioCell ? String(audioCell.w ?? audioCell.v ?? '').trim() : `audio-${page}-${rowIndex + 1}`
+          };
+          if (item.text.length > 0) items.push(item);
+      }
       if (items.length) {
         content[page] = content[page] || {};
         content[page].table = items;
@@ -221,7 +336,7 @@ async function loadTableFromXLSX(page) {
 function loadGraphImage(page) {
   const img = document.getElementById('graph-img');
   if (!img) return;
-  const src = `graf-${page}.jpg`;
+  const src = `graf-${page}.PNG`;
   img.src = src;
   img.onerror = () => { img.style.display = 'none'; };
   img.onload = () => { img.style.display = 'block'; };
@@ -243,6 +358,29 @@ function getRhythmMark(word) {
   return syllables > 1 ? '–' : '·';
 }
 
+function getRhythmWordEndIndexes(text, rhythmItems) {
+  const words = String(text || '')
+    .split(/\s+/)
+    .map((word) => normalizeRhythmText(word).replace(/[^a-záéíóúůýčřžšťďň]/gi, ''))
+    .filter(Boolean);
+  const wordEndIndexes = new Set();
+  let wordIndex = 0;
+  let wordLength = words[0] ? words[0].length : 0;
+  let segmentLength = 0;
+
+  rhythmItems.forEach(({ segment }, index) => {
+    segmentLength += normalizeRhythmText(segment).replace(/[^a-záéíóúůýčřžšťďň]/gi, '').length;
+    if (wordLength && segmentLength >= wordLength) {
+      wordEndIndexes.add(index);
+      wordIndex += 1;
+      wordLength = words[wordIndex] ? words[wordIndex].length : 0;
+      segmentLength = 0;
+    }
+  });
+
+  return wordEndIndexes;
+}
+
 function renderSentence(page, sentenceEl, audioEl) {
   const pageData = content[page];
   if (!pageData || !pageData.table || !pageData.table.length) return;
@@ -261,23 +399,27 @@ function renderSentence(page, sentenceEl, audioEl) {
   }
 
   if (page === 'duraz') {
-    const words = item.text.split(' ');
-    const emphasizedIndex = Math.floor(words.length / 2);
-    words[emphasizedIndex] = `<span class="emphasis-word">${words[emphasizedIndex]}</span>`;
-    sentenceEl.innerHTML = words.join(' ');
+    if (item.hasBold) {
+      sentenceEl.innerHTML = item.emphasisHtml;
+    } else {
+      const words = item.text.split(' ');
+      const emphasizedIndex = Math.floor(words.length / 2);
+      words[emphasizedIndex] = `<span class="emphasis-word">${escapeHtml(words[emphasizedIndex])}</span>`;
+      sentenceEl.innerHTML = words.join(' ');
+    }
   } else if (page === 'rytmus') {
     const rhythmItems = Array.isArray(item.rhythm) && item.rhythm.length
       ? item.rhythm
       : getRhythmBreakdownForText(item.text);
 
     if (rhythmItems.length) {
+      const wordEndIndexes = getRhythmWordEndIndexes(item.text, rhythmItems);
       sentenceEl.innerHTML = rhythmItems
-        .map(({ segment, mark }) => {
-          const letters = String(segment || '')
-            .split('')
-            .map((letter) => `<span class="rhythm-letter"><span class="letter-char">${letter}</span><span class="rhythm-mark">${mark}</span></span>`)
-            .join('');
-          return `<span class="rhythm-word">${letters}</span>`;
+        .map(({ segment, mark }, index) => {
+          const displayedMark = mark === '-' ? '-' : mark;
+          const wordEndClass = wordEndIndexes.has(index) ? ' rhythm-word-end' : '';
+          const markClass = mark === '-' ? ' rhythm-long-mark' : '';
+          return `<span class="rhythm-word${wordEndClass}"><span class="rhythm-segment">${segment}</span><span class="rhythm-mark${markClass}">${displayedMark}</span></span>`;
         })
         .join(' ');
     } else {
@@ -287,7 +429,7 @@ function renderSentence(page, sentenceEl, audioEl) {
     sentenceEl.textContent = item.text;
   }
 
-  const audioSrc = buildAudioSrc(item);
+  const audioSrc = buildAudioSrc(page, item);
   if (audioEl) {
     audioEl.textContent = audioSrc ? audioSrc.replace('./audio/', '') : 'Žádný soubor';
     audioEl.style.cursor = 'pointer';
