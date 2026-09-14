@@ -36,6 +36,9 @@ const content = {
   }
 };
 
+// Rytmický přepis pro věty na stránce Rytmus.
+// Každý záznam obsahuje pole segmentů, kde každý segment má vlastní značku.
+// Příklad zápisu: "Us/. mí/- vám/- se/."
 const rhythmBreakdownByText = {
   "Usmívám se celý den": [
     { segment: "Us", mark: "." },
@@ -139,20 +142,6 @@ function getRhythmBreakdownForText(text) {
   return rhythmBreakdownByText[normalized] || buildDefaultRhythmBreakdown(text);
 }
 
-function buildDefaultRhythmBreakdown(text) {
-  const words = String(text || '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  return words.map((word) => {
-    const cleanWord = word.replace(/[.,;:!?]/g, '').trim();
-    if (!cleanWord) return { segment: word, mark: '.' };
-    const hasLongVowel = /[áéíóúůý]/i.test(cleanWord);
-    return { segment: word, mark: hasLongVowel ? '-' : '.' };
-  });
-}
-
 function getRandomItem(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
@@ -174,13 +163,46 @@ function normalizeSentenceToAudioFile(text) {
     .replace(/^_+|_+$/g, '');
 }
 
-function buildAudioSrc(page, item) {
-  if (!item || !item.text) return '';
+function buildAudioSrcCandidates(page, item) {
+  if (!item || !item.text) return [];
+
   const fileName = normalizeSentenceToAudioFile(item.text);
-  if (!fileName) return '';
-  const pagePrefix = page === 'duraz' || page === 'rytmus' ? `${page}_` : '';
-  const extension = pagePrefix ? 'mp3' : 'm4a';
-  return `./audio/${pagePrefix}${fileName}.${extension}`;
+  if (!fileName) return [];
+
+  const prefixes = ['radost', 'smutek', 'hnev'].includes(page)
+    ? ['emoce', page, 'radost', 'smutek', 'hnev']
+    : [page];
+
+  const uniquePrefixes = [];
+  const seen = new Set();
+  for (const prefix of prefixes) {
+    if (!prefix || seen.has(prefix)) continue;
+    seen.add(prefix);
+    uniquePrefixes.push(prefix);
+  }
+
+  return uniquePrefixes.map((prefix) => `./audio/${prefix}_${fileName}.mp3`);
+}
+
+function buildAudioSrc(page, item) {
+  const candidates = buildAudioSrcCandidates(page, item);
+  return candidates[0] || '';
+}
+
+async function resolveAudioSrc(page, item) {
+  const candidates = buildAudioSrcCandidates(page, item);
+  if (!candidates.length) return '';
+
+  for (const src of candidates) {
+    try {
+      const res = await fetch(src, { method: 'HEAD' });
+      if (res.ok) return src;
+    } catch (error) {
+      // Pokračujeme na další variantu názvu souboru.
+    }
+  }
+
+  return candidates[0];
 }
 
 let sentenceAudio = null;
@@ -205,14 +227,6 @@ function playSentenceAudio(src) {
   if (!src) return;
   const audio = getSentenceAudioElement();
   stopSentenceAudio();
-  audio.onerror = () => {
-    const fallbackSrc = src.replace(/\.m4a$/i, '.mp3');
-    if (audio.src !== new URL(fallbackSrc, window.location.href).href) {
-      audio.src = fallbackSrc;
-      audio.load();
-      audio.play().catch(() => {});
-    }
-  };
   audio.src = src;
   audio.load();
   audio.play().catch(() => {});
@@ -221,31 +235,50 @@ function playSentenceAudio(src) {
 function parseRhythmBreakdown(rawValue) {
   if (rawValue === undefined || rawValue === null) return [];
 
-  const parts = String(rawValue)
+  const text = String(rawValue).trim();
+  if (!text) return [];
+
+  const parts = text
+    .split(/\r?\n/)
+    .flatMap((line) => line.split(/\s+/))
+    .filter(Boolean);
+
+  const result = [];
+  for (const part of parts) {
+    const match = part.match(/^(.*?)(?:\/|\|)(.*)$/);
+    if (match) {
+      const segment = match[1].trim();
+      const mark = match[2].trim();
+      if (segment) result.push({ segment, mark: mark || '.' });
+      continue;
+    }
+
+    const directMatch = part.match(/^(.*?)([.\-])$/);
+    if (directMatch) {
+      const segment = directMatch[1].trim();
+      const mark = directMatch[2] === '-' ? '-' : '.';
+      if (segment) result.push({ segment, mark });
+      continue;
+    }
+
+    result.push({ segment: part.trim(), mark: '.' });
+  }
+
+  return result;
+}
+
+function buildDefaultRhythmBreakdown(text) {
+  const words = String(text || '')
     .trim()
     .split(/\s+/)
     .filter(Boolean);
 
-  return parts.reduce((result, part) => {
-    const match = part.match(/^(.*?)(?:\/|\|)(.*)$/);
-    if (match) {
-      const segment = match[1].trim();
-      if (segment) result.push({ segment, mark: match[2].trim() || '.' });
-      return result;
-    }
-
-    const directMatch = part.match(/^(.*?)([.,-])$/);
-    if (directMatch) {
-      result.push({
-        segment: directMatch[1].trim(),
-        mark: directMatch[2] === '-' ? '-' : directMatch[2]
-      });
-      return result;
-    }
-
-    result.push({ segment: part, mark: '.' });
-    return result;
-  }, []);
+  return words.map((word) => {
+    const cleanWord = word.replace(/[.,;:!?]/g, '').trim();
+    if (!cleanWord) return { segment: word, mark: '.' };
+    const hasLongVowel = /[áéíóúůý]/i.test(cleanWord);
+    return { segment: word, mark: hasLongVowel ? '-' : '.' };
+  });
 }
 
 function escapeHtml(value) {
@@ -280,18 +313,12 @@ function getRichTextMarkup(cell) {
 
 async function loadTableFromXLSX(page) {
   const baseName = `tabulka-${page}.xlsx`;
-  const candidates = [baseName];
-  const pathname = window.location.pathname.replace(/\\/g, '/');
-
-  if (!pathname.includes('/docs/')) {
-    candidates.push(`docs/${baseName}`);
-  } else {
-    candidates.push(`./${baseName}`);
-  }
+  const candidates = [`./${baseName}`];
 
   for (const path of candidates) {
     try {
-      const res = await fetch(path, { cache: 'no-store' });
+      const separator = path.includes('?') ? '&' : '?';
+      const res = await fetch(`${path}${separator}v=20260913`, { cache: 'no-store' });
       if (!res.ok) continue;
       const ab = await res.arrayBuffer();
       const workbook = XLSX.read(ab, { type: 'array', cellHTML: true });
@@ -318,6 +345,7 @@ async function loadTableFromXLSX(page) {
           };
           if (item.text.length > 0) items.push(item);
       }
+
       if (items.length) {
         content[page] = content[page] || {};
         content[page].table = items;
@@ -351,13 +379,6 @@ async function loadCombinedTables(pages) {
   return all;
 }
 
-function getRhythmMark(word) {
-  const cleaned = word.toLowerCase().replace(/[^a-záéíóúůýčřžšťď]/g, '');
-  if (!cleaned) return '·';
-  const syllables = (cleaned.match(/[aeiouyáéíóúůý]+/g) || []).length;
-  return syllables > 1 ? '–' : '·';
-}
-
 function getRhythmWordEndIndexes(text, rhythmItems) {
   const words = String(text || '')
     .split(/\s+/)
@@ -381,7 +402,32 @@ function getRhythmWordEndIndexes(text, rhythmItems) {
   return wordEndIndexes;
 }
 
-function renderSentence(page, sentenceEl, audioEl) {
+function showLocalFileWarning() {
+  if (location.protocol !== 'file:') return;
+
+  const existing = document.getElementById('local-file-warning');
+  if (existing) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'local-file-warning';
+  banner.textContent = 'Audio nefunguje při otevření přes file://. Spusťte stránku přes localhost: http://localhost:8000/';
+  banner.style.position = 'fixed';
+  banner.style.top = '0';
+  banner.style.left = '0';
+  banner.style.right = '0';
+  banner.style.zIndex = '9999';
+  banner.style.background = '#7a1f1f';
+  banner.style.color = '#fff';
+  banner.style.padding = '12px 16px';
+  banner.style.fontSize = '14px';
+  banner.style.fontWeight = '600';
+  banner.style.textAlign = 'center';
+  banner.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+
+  document.body.prepend(banner);
+}
+
+async function renderSentence(page, sentenceEl, audioEl) {
   const pageData = content[page];
   if (!pageData || !pageData.table || !pageData.table.length) return;
 
@@ -429,7 +475,9 @@ function renderSentence(page, sentenceEl, audioEl) {
     sentenceEl.textContent = item.text;
   }
 
-  const audioSrc = buildAudioSrc(page, item);
+  const preferredAudioSrc = buildAudioSrc(page, item);
+  const audioSrc = await resolveAudioSrc(page, item) || preferredAudioSrc;
+
   if (audioEl) {
     audioEl.textContent = audioSrc ? audioSrc.replace('./audio/', '') : 'Žádný soubor';
     audioEl.style.cursor = 'pointer';
@@ -471,15 +519,17 @@ async function initPage(page) {
 
   if (['radost','smutek','hnev'].includes(page)) loadGraphImage(page);
 
-  renderSentence(page, sentenceEl, audioEl);
+  await renderSentence(page, sentenceEl, audioEl);
 
   if (nextBtn) {
-    nextBtn.addEventListener('click', () => {
+    nextBtn.addEventListener('click', async () => {
       stopSentenceAudio();
-      renderSentence(page, sentenceEl, audioEl);
+      await renderSentence(page, sentenceEl, audioEl);
     });
   }
 }
+
+showLocalFileWarning();
 
 if (page && sentenceEl) {
   initPage(page);

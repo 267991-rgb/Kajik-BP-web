@@ -6,7 +6,7 @@
     <title>Rytmus</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script defer src="script.js?v=2"></script>
+    <script defer src="script.js?v=20260913"></script>
   </head>
   <body class="page-rhythm" data-page="rytmus">
     <header class="top-bar">
@@ -19,13 +19,13 @@
     </header>
 
     <main class="content-shell">
-      <section class="panel panel-rytmus rhythm-panel">
+      <section class="panel panel-rytmus">
         <div class="panel-title">RYTMUS</div>
-        <div class="rhythm-text-block">
-          <div class="sentence-row">
-            <p id="sentence" class="sentence rhythm-sentence"></p>
-            <button id="play-audio-btn" class="play-audio-btn" type="button" aria-label="Přehrát audio">▶</button>
-          </div>
+        <div class="sentence-row">
+          <p id="sentence" class="sentence rhythm-sentence"></p>
+        </div>
+        <div class="audio-controls">
+          <button id="play-audio-btn" class="play-audio-btn" type="button" aria-label="Přehrát audio">▶</button>
         </div>
       </section>
     </main>
