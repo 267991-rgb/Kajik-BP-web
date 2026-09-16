@@ -139,7 +139,10 @@ function normalizeRhythmText(text) {
 
 function getRhythmBreakdownForText(text) {
   const normalized = normalizeRhythmText(text);
-  return rhythmBreakdownByText[normalized] || buildDefaultRhythmBreakdown(text);
+  const matchingKey = Object.keys(rhythmBreakdownByText).find(
+    (key) => normalizeRhythmText(key) === normalized
+  );
+  return matchingKey ? rhythmBreakdownByText[matchingKey] : buildDefaultRhythmBreakdown(text);
 }
 
 function getRandomItem(list) {
@@ -169,6 +172,20 @@ function buildAudioSrcCandidates(page, item) {
   const fileName = normalizeSentenceToAudioFile(item.text);
   if (!fileName) return [];
 
+  const candidates = [];
+  const addCandidate = (value) => {
+    const reference = String(value || '').trim().replace(/\\/g, '/');
+    if (!reference) return;
+    const cleanReference = reference.replace(/^\.\/audio\//i, '').replace(/^audio\//i, '');
+    const withExtension = /\.(mp3|m4a|wav)$/i.test(cleanReference)
+      ? cleanReference
+      : `${cleanReference}.mp3`;
+    const src = `./audio/${withExtension}`;
+    if (!candidates.includes(src)) candidates.push(src);
+  };
+
+  addCandidate(item.audio);
+
   const prefixes = ['radost', 'smutek', 'hnev'].includes(page)
     ? ['emoce', page, 'radost', 'smutek', 'hnev']
     : [page];
@@ -181,7 +198,8 @@ function buildAudioSrcCandidates(page, item) {
     uniquePrefixes.push(prefix);
   }
 
-  return uniquePrefixes.map((prefix) => `./audio/${prefix}_${fileName}.mp3`);
+  uniquePrefixes.forEach((prefix) => addCandidate(`${prefix}_${fileName}.mp3`));
+  return candidates;
 }
 
 function buildAudioSrc(page, item) {
