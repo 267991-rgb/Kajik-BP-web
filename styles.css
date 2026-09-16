@@ -114,27 +114,27 @@ body.page-home {
 }
 
 .emotion-card {
-  background: linear-gradient(135deg, #fff0a3 0%, #f7d44f 100%);
+  background: linear-gradient(90deg, #fff4ad 0%, #f2c72f 100%);
 }
 
 .emphasis-card {
-  background: linear-gradient(135deg, #ffd99a 0%, #f2a35d 100%);
+  background: linear-gradient(90deg, #ffe0a8 0%, #eb8e42 100%);
 }
 
 .rhythm-card {
-  background: linear-gradient(135deg, #eadcff 0%, #c2a9f0 100%);
+  background: linear-gradient(90deg, #f0e3ff 0%, #b58be8 100%);
 }
 
 body[data-theme="dark"] .emotion-card {
-  background: linear-gradient(90deg, #a28b2d 0%, #e4c34e 100%);
+  background: linear-gradient(90deg, #c8b15a 0%, #e5c544 100%);
 }
 
 body[data-theme="dark"] .emphasis-card {
-  background: linear-gradient(90deg, #b66b3a 0%, #ed9a5c 100%);
+  background: linear-gradient(90deg, #ce9460 0%, #e88b48 100%);
 }
 
 body[data-theme="dark"] .rhythm-card {
-  background: linear-gradient(90deg, #7655a0 0%, #ad82d2 100%);
+  background: linear-gradient(90deg, #a98acb 0%, #9a6bc7 100%);
 }
 
 .card-label {
