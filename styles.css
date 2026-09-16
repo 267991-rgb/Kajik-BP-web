@@ -126,15 +126,15 @@ body.page-home {
 }
 
 body[data-theme="dark"] .emotion-card {
-  background: linear-gradient(135deg, #817020 0%, #d0a936 100%);
+  background: linear-gradient(90deg, #a28b2d 0%, #e4c34e 100%);
 }
 
 body[data-theme="dark"] .emphasis-card {
-  background: linear-gradient(135deg, #92582f 0%, #d5864a 100%);
+  background: linear-gradient(90deg, #b66b3a 0%, #ed9a5c 100%);
 }
 
 body[data-theme="dark"] .rhythm-card {
-  background: linear-gradient(135deg, #604781 0%, #956fc0 100%);
+  background: linear-gradient(90deg, #7655a0 0%, #ad82d2 100%);
 }
 
 .card-label {
