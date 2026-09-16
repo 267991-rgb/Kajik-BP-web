@@ -187,14 +187,33 @@ body[data-theme="dark"] .rhythm-card {
 
 .joy-card {
   background: linear-gradient(135deg, #ffe062 0%, var(--joy) 100%);
+  color: #4b3500;
 }
 
 .sadness-card {
   background: linear-gradient(135deg, #8dc2ff 0%, var(--sad) 100%);
+  color: #123252;
 }
 
 .anger-card {
   background: linear-gradient(135deg, #ff8d8d 0%, var(--anger) 100%);
+  color: #51141a;
+}
+
+.choice-card h2 {
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.22);
+}
+
+body[data-theme="dark"] .joy-card {
+  color: #fff2a8;
+}
+
+body[data-theme="dark"] .sadness-card {
+  color: #e0efff;
+}
+
+body[data-theme="dark"] .anger-card {
+  color: #ffe1e1;
 }
 
 .top-bar {
