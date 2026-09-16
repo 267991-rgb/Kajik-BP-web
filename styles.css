@@ -223,6 +223,20 @@ body[data-theme="dark"] .rhythm-card {
   font-size: 1.05rem;
 }
 
+body[data-theme="dark"] .icon-btn,
+body[data-theme="dark"] .pill-btn,
+body[data-theme="dark"] .top-bar .theme-toggle {
+  color: #f8f1e9;
+  background: #30353d;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.34);
+}
+
+body[data-theme="dark"] .icon-btn:hover,
+body[data-theme="dark"] .pill-btn:hover,
+body[data-theme="dark"] .top-bar .theme-toggle:hover {
+  background: #3d444e;
+}
+
 .icon-btn {
   width: 56px;
   height: 56px;
