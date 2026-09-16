@@ -7,6 +7,25 @@
   --sad: #6fa8dc;
   --anger: #d9534f;
   --warm: #f2b26f;
+  --surface: rgba(255, 255, 255, 0.85);
+  --surface-soft: rgba(255, 255, 255, 0.58);
+  --outline: rgba(74, 52, 40, 0.18);
+  --accent: #d62828;
+  --accent-deep: #9d1c2b;
+  --page-gradient: linear-gradient(135deg, #fff8ef 0%, #fdeed8 100%);
+}
+
+body[data-theme="dark"] {
+  --bg: #17191d;
+  --ink: #f4eee7;
+  --card: #24272d;
+  --shadow: rgba(0, 0, 0, 0.38);
+  --surface: rgba(39, 43, 50, 0.94);
+  --surface-soft: rgba(28, 31, 37, 0.74);
+  --outline: rgba(255, 255, 255, 0.14);
+  --accent: #ff7a70;
+  --accent-deep: #c94d5a;
+  --page-gradient: linear-gradient(135deg, #17191d 0%, #29252b 100%);
 }
 
 * {
@@ -16,9 +35,10 @@
 body {
   margin: 0;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #fff8ef 0%, #fdeed8 100%);
+  background: var(--page-gradient);
   color: var(--ink);
   min-height: 100vh;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 body.page-home {
@@ -29,6 +49,44 @@ body.page-home {
 
 .home-shell {
   width: min(1100px, 100%);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--outline);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 8px 18px var(--shadow);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-2px);
+}
+
+.theme-toggle-icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.page-home .theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  z-index: 2;
 }
 
 .home-grid {
@@ -65,6 +123,18 @@ body.page-home {
 
 .rhythm-card {
   background: linear-gradient(135deg, #d8c2ff 0%, #b8a6e8 100%);
+}
+
+body[data-theme="dark"] .emotion-card {
+  background: linear-gradient(135deg, #665b20 0%, #9a8428 100%);
+}
+
+body[data-theme="dark"] .emphasis-card {
+  background: linear-gradient(135deg, #60462b 0%, #986632 100%);
+}
+
+body[data-theme="dark"] .rhythm-card {
+  background: linear-gradient(135deg, #45365c 0%, #665080 100%);
 }
 
 .card-label {
@@ -179,6 +249,7 @@ body.page-home {
   border-radius: 28px;
   padding: 28px;
   box-shadow: 0 18px 36px var(--shadow);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .panel-radost {
@@ -202,6 +273,26 @@ body.page-home {
   max-width: 1400px;
 }
 
+body[data-theme="dark"] .panel-radost {
+  background: linear-gradient(135deg, #5b5124 0%, #857425 100%);
+}
+
+body[data-theme="dark"] .panel-smutek {
+  background: linear-gradient(135deg, #253c58 0%, #3f6f98 100%);
+}
+
+body[data-theme="dark"] .panel-hnev {
+  background: linear-gradient(135deg, #592b32 0%, #9d3f45 100%);
+}
+
+body[data-theme="dark"] .panel-duraz {
+  background: linear-gradient(135deg, #59432c 0%, #9a6a3b 100%);
+}
+
+body[data-theme="dark"] .panel-rytmus {
+  background: linear-gradient(135deg, #3e334f 0%, #665285 100%);
+}
+
 .panel-title {
   font-size: 1.6rem;
   font-weight: 800;
@@ -211,12 +302,12 @@ body.page-home {
 .graph-placeholder {
   min-height: 180px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--surface-soft);
   display: grid;
   place-items: center;
   font-weight: 700;
   margin-bottom: 22px;
-  border: 2px dashed rgba(74, 52, 40, 0.25);
+  border: 2px dashed var(--outline);
 }
 
 .graph-img {
@@ -257,7 +348,7 @@ body.page-home {
 
 .audio-box {
   flex: 1;
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--surface-soft);
   border-radius: 16px;
   padding: 14px 16px;
 }
@@ -271,7 +362,7 @@ body.page-home {
   margin: 0;
   border: none;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ff6f6f 0%, #d62828 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
   color: #fff;
   font-size: 2.6rem;
   box-shadow: 0 14px 24px rgba(94, 63, 37, 0.24);
@@ -363,12 +454,12 @@ body.page-home {
 .emphasis-sentence {
   font-size: clamp(1.8rem, 3.2vw, 2.8rem);
   font-weight: 800;
-  color: #000000;
+  color: var(--ink);
 }
 
 .emphasis-word {
   font-weight: 900;
-  color: #d62828;
+  color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 4px;
 }

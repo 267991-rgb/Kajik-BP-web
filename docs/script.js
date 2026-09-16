@@ -445,6 +445,38 @@ function showLocalFileWarning() {
   document.body.prepend(banner);
 }
 
+function initThemeToggle() {
+  const savedTheme = localStorage.getItem('kajik-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+  document.body.dataset.theme = initialTheme;
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'theme-toggle';
+  toggle.addEventListener('click', () => {
+    const theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.body.dataset.theme = theme;
+    localStorage.setItem('kajik-theme', theme);
+    updateThemeToggle(toggle, theme);
+  });
+
+  const actions = document.querySelector('.top-bar-actions');
+  if (actions) {
+    actions.appendChild(toggle);
+  } else {
+    document.body.appendChild(toggle);
+  }
+  updateThemeToggle(toggle, initialTheme);
+}
+
+function updateThemeToggle(toggle, theme) {
+  const isDark = theme === 'dark';
+  toggle.innerHTML = `<span class="theme-toggle-icon" aria-hidden="true">${isDark ? '☀' : '☾'}</span><span>${isDark ? 'Světlý režim' : 'Tmavý režim'}</span>`;
+  toggle.setAttribute('aria-label', isDark ? 'Přepnout na světlý režim' : 'Přepnout na tmavý režim');
+  toggle.title = toggle.getAttribute('aria-label');
+}
+
 async function renderSentence(page, sentenceEl, audioEl) {
   const pageData = content[page];
   if (!pageData || !pageData.table || !pageData.table.length) return;
@@ -548,6 +580,7 @@ async function initPage(page) {
 }
 
 showLocalFileWarning();
+initThemeToggle();
 
 if (page && sentenceEl) {
   initPage(page);
