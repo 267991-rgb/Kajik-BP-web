@@ -246,10 +246,6 @@ body[data-theme="dark"] .choice-card h2 {
   font-size: 1.05rem;
 }
 
-.top-bar #next-sentence {
-  margin-right: 150px;
-}
-
 body[data-theme="dark"] .icon-btn,
 body[data-theme="dark"] .pill-btn,
 body[data-theme="dark"] .top-bar .theme-toggle {
@@ -383,8 +379,13 @@ body[data-theme="dark"] .panel-rytmus {
 .audio-controls {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
   margin-top: 8px;
+}
+
+.audio-controls #next-sentence {
+  margin: 0;
 }
 
 .audio-box {
