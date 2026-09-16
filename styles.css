@@ -82,7 +82,7 @@ body.page-home {
   line-height: 1;
 }
 
-.page-home .theme-toggle {
+.theme-toggle {
   position: fixed;
   top: 20px;
   right: 24px;
