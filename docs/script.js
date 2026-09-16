@@ -477,6 +477,68 @@ function updateThemeToggle(toggle, theme) {
   toggle.title = toggle.getAttribute('aria-label');
 }
 
+const sentenceStreakStorageKey = 'kajik-sentence-streak';
+
+function readSentenceStreak() {
+  try {
+    return JSON.parse(sessionStorage.getItem(sentenceStreakStorageKey) || 'null');
+  } catch (error) {
+    return null;
+  }
+}
+
+function markCurrentSessionPage() {
+  const state = readSentenceStreak();
+  if (!state || state.path === location.pathname) return;
+  sessionStorage.setItem(sentenceStreakStorageKey, JSON.stringify({
+    path: location.pathname,
+    count: 0
+  }));
+}
+
+function showStreakCelebration() {
+  let celebration = document.getElementById('streak-celebration');
+  if (!celebration) {
+    celebration = document.createElement('div');
+    celebration.id = 'streak-celebration';
+    celebration.className = 'streak-celebration';
+    celebration.setAttribute('role', 'status');
+    celebration.setAttribute('aria-live', 'polite');
+    celebration.innerHTML = `
+      <div class="streak-celebration-card">
+        <div class="streak-celebration-icon" aria-hidden="true">&#127881;</div>
+        <strong>Skvělá série!</strong>
+        <span>10 vět za sebou</span>
+      </div>
+      <i class="streak-confetti streak-confetti-one" aria-hidden="true"></i>
+      <i class="streak-confetti streak-confetti-two" aria-hidden="true"></i>
+      <i class="streak-confetti streak-confetti-three" aria-hidden="true"></i>
+      <i class="streak-confetti streak-confetti-four" aria-hidden="true"></i>`;
+    document.body.appendChild(celebration);
+  }
+
+  celebration.classList.remove('is-visible');
+  void celebration.offsetWidth;
+  celebration.classList.add('is-visible');
+  window.clearTimeout(celebration.hideTimer);
+  celebration.hideTimer = window.setTimeout(() => {
+    celebration.classList.remove('is-visible');
+  }, 1800);
+}
+
+function registerSentenceProgress() {
+  const state = readSentenceStreak();
+  const nextState = state && state.path === location.pathname
+    ? { path: state.path, count: state.count + 1 }
+    : { path: location.pathname, count: 1 };
+
+  if (nextState.count >= 10) {
+    nextState.count = 0;
+    showStreakCelebration();
+  }
+  sessionStorage.setItem(sentenceStreakStorageKey, JSON.stringify(nextState));
+}
+
 async function renderSentence(page, sentenceEl, audioEl) {
   const pageData = content[page];
   if (!pageData || !pageData.table || !pageData.table.length) return;
@@ -544,6 +606,8 @@ async function renderSentence(page, sentenceEl, audioEl) {
     playBtn.title = audioSrc ? 'Přehrát audio' : 'Žádný soubor';
     playBtn.onclick = () => playSentenceAudio(audioSrc);
   }
+
+  registerSentenceProgress();
 }
 
 const page = document.body.dataset.page;
@@ -581,6 +645,7 @@ async function initPage(page) {
 
 showLocalFileWarning();
 initThemeToggle();
+markCurrentSessionPage();
 
 if (page && sentenceEl) {
   initPage(page);
