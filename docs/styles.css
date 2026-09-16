@@ -532,7 +532,7 @@ body[data-theme="dark"] .rhythm-mark {
 }
 
 .streak-celebration.is-visible {
-  animation: streak-fade 2.2s ease both;
+  animation: streak-fade 3s ease both;
 }
 
 .streak-celebration-card {
@@ -547,7 +547,7 @@ body[data-theme="dark"] .rhythm-mark {
   box-shadow: 0 18px 50px rgba(41, 27, 19, 0.3);
   text-align: center;
   transform: scale(0.72) translateY(12px);
-  animation: streak-pop 2.2s cubic-bezier(0.2, 0.85, 0.3, 1.1) both;
+  animation: streak-pop 3s cubic-bezier(0.2, 0.85, 0.3, 1.1) both;
 }
 
 body[data-theme="dark"] .streak-celebration-card {
@@ -577,7 +577,7 @@ body[data-theme="dark"] .streak-celebration-card {
   height: 18px;
   border-radius: 3px;
   opacity: 0;
-  animation: streak-confetti 2.2s ease-out both;
+  animation: streak-confetti 3s ease-out both;
 }
 
 .streak-confetti-one {

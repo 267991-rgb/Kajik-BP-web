@@ -523,7 +523,7 @@ function showStreakCelebration() {
   window.clearTimeout(celebration.hideTimer);
   celebration.hideTimer = window.setTimeout(() => {
     celebration.classList.remove('is-visible');
-  }, 2200);
+  }, 3000);
 }
 
 function registerSentenceProgress() {
