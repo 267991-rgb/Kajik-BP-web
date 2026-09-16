@@ -246,6 +246,10 @@ body[data-theme="dark"] .choice-card h2 {
   font-size: 1.05rem;
 }
 
+.top-bar #next-sentence {
+  margin-right: 150px;
+}
+
 body[data-theme="dark"] .icon-btn,
 body[data-theme="dark"] .pill-btn,
 body[data-theme="dark"] .top-bar .theme-toggle {
@@ -462,7 +466,11 @@ body[data-theme="dark"] .panel-rytmus {
   margin-top: 2px;
   font-size: 2rem;
   font-weight: 800;
-  color: #4a3428;
+  color: var(--ink);
+}
+
+body[data-theme="dark"] .rhythm-mark {
+  color: #ffffff;
 }
 
 .rhythm-long-mark {
